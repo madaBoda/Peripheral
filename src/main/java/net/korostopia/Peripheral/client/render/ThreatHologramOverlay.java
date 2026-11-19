@@ -174,7 +174,8 @@ public final class ThreatHologramOverlay {
             Vec3 feet = track.feetPosition();
             Vec3 center = feet.add(0.0D, track.entity().getBbHeight() * 0.5D, 0.0D);
             HudProjection.Projection projection = HudProjection.project(
-                    camera, playerEyeReference, feet, center, screenWidth, screenHeight, verticalFovDegrees
+                    camera, playerEyeReference, feet, center, screenWidth, screenHeight,
+                    verticalFovDegrees, minSizeDistance
             );
 
             double cameraDistanceToCenter = cameraPosition.distanceTo(center);

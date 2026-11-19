@@ -41,14 +41,14 @@ public final class PeripheralConfig {
                         "Maximum 3D distance, in blocks, for threat detection.",
                         "Manual edits to peripheral-client.toml require a game restart."
                 )
-                .defineInRange("detectionRange", 48, 1, 128);
+                .defineInRange("detectionRange", 12, 1, 128);
 
         RADAR_RANGE = builder
                 .comment(
                         "Maximum distance for threats hidden by blocks.",
                         "Visible rear threats may use the full detectionRange."
                 )
-                .defineInRange("radarRange", 16, 1, 128);
+                .defineInRange("radarRange", 5, 1, 128);
 
         MAX_TARGETS = builder
                 .comment("Maximum number of visible holograms. Nearest threats take priority.")
@@ -56,7 +56,7 @@ public final class PeripheralConfig {
 
         OPACITY = builder
                 .comment("Base hologram opacity. Lower values are more transparent.")
-                .defineInRange("opacity", 0.40D, 0.05D, 1.0D);
+                .defineInRange("opacity", 1D, 0.05D, 1D);
 
         SHOW_IN_MENUS = builder
                 .comment(
@@ -97,11 +97,11 @@ public final class PeripheralConfig {
 
         MIN_SIZE_DISTANCE = builder
                 .comment("Minimum distance used for hologram sizing. Set to 0 to disable the limit.")
-                .defineInRange("minSizeDistance", 4.0D, 0.0D, 32.0D);
+                .defineInRange("minSizeDistance", 2.0D, 0.0D, 32.0D);
 
         GLOW_AMOUNT = builder
                 .comment("Glow strength. Set to 0 to disable the halo.")
-                .defineInRange("glowAmount", 0.28D, 0.0D, 1.0D);
+                .defineInRange("glowAmount", 0.0D, 0.0D, 1.0D);
 
         HUD_MOVEMENT_SMOOTHING_SPEED = builder
                 .comment("Screen-space movement smoothing. Higher values follow projected positions faster.")
