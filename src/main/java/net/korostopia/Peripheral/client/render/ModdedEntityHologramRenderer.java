@@ -64,7 +64,6 @@ public final class ModdedEntityHologramRenderer {
         return found;
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public static boolean renderIntoSprite(
             Minecraft minecraft,
             LivingEntity entity,
@@ -80,7 +79,6 @@ public final class ModdedEntityHologramRenderer {
         String rendererKind = geckoLibRenderer ? "GeckoLib" : "modded";
         String entityId = String.valueOf(ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()));
         spriteTarget.bindWrite(true);
-        HologramFallbackRenderer.renderBackgroundIntoSprite(entity);
 
         float oldYaw = entity.getYRot();
         float oldYawOld = entity.yRotO;
