@@ -19,7 +19,8 @@ public final class HudProjection {
             Vec3 centerPosition,
             int screenWidth,
             int screenHeight,
-            double verticalFovDegrees
+            double verticalFovDegrees,
+            double minimumProjectionDistance
     ) {
         double dx = centerPosition.x - referencePosition.x;
         double dy = centerPosition.y - referencePosition.y;
@@ -58,7 +59,21 @@ public final class HudProjection {
         double feetDy = feetPosition.y - referencePosition.y;
         double feetDz = feetPosition.z - referencePosition.z;
         double feetHorizontalDistance = Math.sqrt(feetDx * feetDx + feetDz * feetDz);
-        double targetElevation = Math.atan2(feetDy, Math.max(1.0E-4D, feetHorizontalDistance));
+
+        double minimumHorizontalDistance = 0.0D;
+        if (Double.isFinite(minimumProjectionDistance) && minimumProjectionDistance > 0.0D) {
+            double minimumHorizontalDistanceSquared =
+                    minimumProjectionDistance * minimumProjectionDistance - dy * dy;
+            if (minimumHorizontalDistanceSquared > 0.0D) {
+                minimumHorizontalDistance = Math.sqrt(minimumHorizontalDistanceSquared);
+            }
+        }
+        double projectedFeetHorizontalDistance = Math.max(
+                feetHorizontalDistance, minimumHorizontalDistance
+        );
+        double targetElevation = Math.atan2(
+                feetDy, Math.max(1.0E-4D, projectedFeetHorizontalDistance)
+        );
         double worldElevationDegrees = Math.toDegrees(targetElevation);
         double relativeVerticalAngle = targetElevation + Math.toRadians(camera.getXRot());
         double maxAngle = Math.toRadians(MAX_PROJECTED_ANGLE_DEGREES);
