@@ -3,7 +3,6 @@ package net.korostopia.Peripheral.config;
 import com.mojang.logging.LogUtils;
 import net.korostopia.Peripheral.Peripheral;
 import net.korostopia.Peripheral.debug.PeripheralDebug;
-import net.korostopia.Peripheral.debug.PeripheralDebugConfig;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -24,15 +23,6 @@ import java.util.Locale;
 public final class PeripheralConfigEvents {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final String CONFIG_SUMMARY =
-            "Client config active: "
-                    + "detectionRange={} blocks, radarRange={} blocks, maxTargets={}, opacity={}, "
-                    + "showInMenus={}, screenExclusions={}, allAroundRadar={}, showThroughWalls={}, "
-                    + "behindColor={}, frontColor={}, glowAmount={}, minSizeDistance={}, "
-                    + "worldSmoothingSpeed={}, hudMovementSmoothingSpeed={}, "
-                    + "opacityInterpolationSpeed={}, fadeInDurationMs={}, fadeOutDurationMs={}, "
-                    + "includeMobs={}, excludeMobs={}";
-
     private PeripheralConfigEvents() {
     }
 
@@ -47,45 +37,62 @@ public final class PeripheralConfigEvents {
     }
 
     private static void logIfPeripheral(ModConfig config) {
-        if ((config.getSpec() != PeripheralConfig.SPEC
-                && config.getSpec() != PeripheralDebugConfig.SPEC)
-                || !PeripheralConfig.SPEC.isLoaded()
-                || !PeripheralDebugConfig.SPEC.isLoaded()) {
+        if (config.getSpec() != PeripheralClientConfig.SPEC
+                && config.getSpec() != PeripheralServerConfig.SPEC) {
             return;
         }
 
-        PeripheralDebug.log(
-                "logConfigSummary",
-                CONFIG_SUMMARY,
-                PeripheralConfig.DETECTION_RANGE.get(),
-                PeripheralConfig.RADAR_RANGE.get(),
-                PeripheralConfig.MAX_TARGETS.get(),
-                PeripheralConfig.OPACITY.get(),
-                PeripheralConfig.SHOW_IN_MENUS.get(),
-                PeripheralConfig.SCREEN_EXCLUSIONS.get(),
-                PeripheralConfig.ENABLE_FRONT_HEMISPHERE.get(),
-                PeripheralConfig.SHOW_THROUGH_WALLS.get(),
-                PeripheralConfig.HOLOGRAM_COLOR.get(),
-                PeripheralConfig.FRONT_HOLOGRAM_COLOR.get(),
-                PeripheralConfig.GLOW_AMOUNT.get(),
-                PeripheralConfig.MIN_SIZE_DISTANCE.get(),
-                PeripheralConfig.SMOOTHING_SPEED.get(),
-                PeripheralConfig.HUD_MOVEMENT_SMOOTHING_SPEED.get(),
-                PeripheralConfig.OPACITY_INTERPOLATION_SPEED.get(),
-                PeripheralConfig.FADE_IN_DURATION_MS.get(),
-                PeripheralConfig.FADE_OUT_DURATION_MS.get(),
-                PeripheralConfig.INCLUDE_MOBS.get(),
-                PeripheralConfig.EXCLUDE_MOBS.get()
-        );
+        if (!PeripheralClientConfig.SPEC.isLoaded()) {
+            return;
+        }
 
-        warnUnknownEntries("includeMobs", PeripheralConfig.INCLUDE_MOBS.get());
-        warnUnknownEntries("excludeMobs", PeripheralConfig.EXCLUDE_MOBS.get());
+        if (PeripheralDebug.isEnabled("logConfigSummary")) {
+            PeripheralDebug.log(
+                    "logConfigSummary",
+                    "Client config active: opacity={}, showInMenus={}, screenExclusions={}, behindColor={}, "
+                            + "frontColor={}, glowAmount={}, minSizeDistance={}, worldSmoothingSpeed={}, "
+                            + "hudMovementSmoothingSpeed={}, opacityInterpolationSpeed={}, "
+                            + "fadeInDurationMs={}, fadeOutDurationMs={}",
+                    PeripheralClientConfig.OPACITY.get(),
+                    PeripheralClientConfig.SHOW_IN_MENUS.get(),
+                    PeripheralClientConfig.SCREEN_EXCLUSIONS.get(),
+                    PeripheralClientConfig.HOLOGRAM_COLOR.get(),
+                    PeripheralClientConfig.FRONT_HOLOGRAM_COLOR.get(),
+                    PeripheralClientConfig.GLOW_AMOUNT.get(),
+                    PeripheralClientConfig.MIN_SIZE_DISTANCE.get(),
+                    PeripheralClientConfig.SMOOTHING_SPEED.get(),
+                    PeripheralClientConfig.HUD_MOVEMENT_SMOOTHING_SPEED.get(),
+                    PeripheralClientConfig.OPACITY_INTERPOLATION_SPEED.get(),
+                    PeripheralClientConfig.FADE_IN_DURATION_MS.get(),
+                    PeripheralClientConfig.FADE_OUT_DURATION_MS.get()
+            );
+
+            if (PeripheralServerConfig.SPEC.isLoaded()) {
+                PeripheralDebug.log(
+                        "logConfigSummary",
+                        "Server config active: detectionRange={} blocks, radarRange={} blocks, maxTargets={}, "
+                                + "allAroundRadar={}, showThroughWalls={}, listen={}, requireCrouchToListen={}, "
+                                + "includeMobs={}, excludeMobs={}",
+                        PeripheralServerConfig.detectionRange(),
+                        PeripheralServerConfig.radarRange(),
+                        PeripheralServerConfig.maxTargets(),
+                        PeripheralServerConfig.includeFrontHemisphere(),
+                        PeripheralServerConfig.showThroughWalls(),
+                        PeripheralServerConfig.listenEnabled(),
+                        PeripheralServerConfig.requireCrouchToListen(),
+                        PeripheralServerConfig.includedMobs(),
+                        PeripheralServerConfig.excludedMobs()
+                );
+            }
+        }
+
+        if (PeripheralServerConfig.SPEC.isLoaded()) {
+            warnUnknownEntries("includeMobs", PeripheralServerConfig.includedMobs());
+            warnUnknownEntries("excludeMobs", PeripheralServerConfig.excludedMobs());
+        }
     }
 
-    private static void warnUnknownEntries(
-            String settingName,
-            List<? extends String> configuredIds
-    ) {
+    private static void warnUnknownEntries(String settingName, List<? extends String> configuredIds) {
         for (String configuredId : configuredIds) {
             if (configuredId == null || configuredId.isBlank()) {
                 continue;
@@ -100,7 +107,7 @@ public final class PeripheralConfigEvents {
             ResourceLocation key = ResourceLocation.tryParse(id);
             if (key == null || !ForgeRegistries.ENTITY_TYPES.containsKey(key)) {
                 LOGGER.warn(
-                        "Peripheral entityDetection.{} contains '{}', but that entity type is not registered.",
+                        "Peripheral detection.{} contains '{}', but that entity type is not registered.",
                         settingName,
                         configuredId
                 );
@@ -108,21 +115,18 @@ public final class PeripheralConfigEvents {
         }
     }
 
-    private static void warnUnknownNamespace(
-            String settingName,
-            String configuredId,
-            String namespace
-    ) {
+    private static void warnUnknownNamespace(String settingName, String configuredId, String namespace) {
         boolean namespaceExists = ForgeRegistries.ENTITY_TYPES.getKeys().stream()
                 .anyMatch(key -> key.getNamespace().equals(namespace));
 
         if (!namespaceExists) {
             LOGGER.warn(
-                    "Peripheral entityDetection.{} contains wildcard '{}', but no entity types use namespace '{}'.",
+                    "Peripheral detection.{} contains wildcard '{}', but no entity types use namespace '{}'.",
                     settingName,
                     configuredId,
                     namespace
             );
         }
     }
+
 }

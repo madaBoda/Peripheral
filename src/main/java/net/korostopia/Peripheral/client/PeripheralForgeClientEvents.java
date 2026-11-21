@@ -4,7 +4,7 @@ import net.korostopia.Peripheral.Peripheral;
 import net.korostopia.Peripheral.client.input.PeripheralKeyMappings;
 import net.korostopia.Peripheral.client.math.CameraFovCache;
 import net.korostopia.Peripheral.client.render.ThreatHologramOverlay;
-import net.korostopia.Peripheral.config.PeripheralConfig;
+import net.korostopia.Peripheral.config.PeripheralClientConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ScreenEvent;
@@ -44,7 +44,7 @@ public final class PeripheralForgeClientEvents {
 
     @SubscribeEvent
     public static void onScreenRenderPost(ScreenEvent.Render.Post event) {
-        if (!PeripheralConfig.SHOW_IN_MENUS.get()) {
+        if (!PeripheralClientConfig.SHOW_IN_MENUS.get()) {
             return;
         }
 

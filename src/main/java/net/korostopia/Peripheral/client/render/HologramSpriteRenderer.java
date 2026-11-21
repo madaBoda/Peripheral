@@ -9,7 +9,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.korostopia.Peripheral.client.tracking.HologramTrack;
-import net.korostopia.Peripheral.config.PeripheralConfig;
+import net.korostopia.Peripheral.config.PeripheralClientConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
@@ -66,7 +66,7 @@ public final class HologramSpriteRenderer {
             float y = (float) top;
             HologramColor tint = HologramColor.forTrack(track);
             double opacity = Math.max(0.0D, Math.min(1.0D, track.opacity()));
-            double glow = Math.max(0.0D, Math.min(1.0D, PeripheralConfig.GLOW_AMOUNT.get()));
+            double glow = Math.max(0.0D, Math.min(1.0D, PeripheralClientConfig.GLOW_AMOUNT.get()));
             if (glow > 0.0D) {
                 float outerSize = quadSize * 1.30F;
                 float middleSize = quadSize * 1.17F;

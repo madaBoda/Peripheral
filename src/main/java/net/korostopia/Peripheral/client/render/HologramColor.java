@@ -1,13 +1,13 @@
 package net.korostopia.Peripheral.client.render;
 
 import net.korostopia.Peripheral.client.tracking.HologramTrack;
-import net.korostopia.Peripheral.config.PeripheralConfig;
+import net.korostopia.Peripheral.config.PeripheralClientConfig;
 
 public record HologramColor(float red, float green, float blue) {
     public static HologramColor forTrack(HologramTrack track) {
         String configured = track != null && track.isInFront()
-                ? PeripheralConfig.FRONT_HOLOGRAM_COLOR.get()
-                : PeripheralConfig.HOLOGRAM_COLOR.get();
+                ? PeripheralClientConfig.FRONT_HOLOGRAM_COLOR.get()
+                : PeripheralClientConfig.HOLOGRAM_COLOR.get();
         return parse(configured);
     }
 
