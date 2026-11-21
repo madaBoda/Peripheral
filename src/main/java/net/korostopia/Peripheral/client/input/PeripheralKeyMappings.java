@@ -1,6 +1,7 @@
 package net.korostopia.Peripheral.client.input;
 
 import net.korostopia.Peripheral.Peripheral;
+import net.korostopia.Peripheral.config.PeripheralServerConfig;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -22,6 +23,12 @@ public final class PeripheralKeyMappings {
             "key.categories.peripheral"
     );
 
+    public static final KeyMapping LISTEN = new KeyMapping(
+            "key.peripheral.listen",
+            GLFW.GLFW_KEY_LEFT_ALT,
+            "key.categories.peripheral"
+    );
+
     private static boolean hologramsEnabled = true;
 
     private PeripheralKeyMappings() {
@@ -30,10 +37,28 @@ public final class PeripheralKeyMappings {
     @SubscribeEvent
     public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(TOGGLE_HOLOGRAMS);
+        event.register(LISTEN);
     }
 
     public static boolean areHologramsEnabled() {
         return hologramsEnabled;
+    }
+
+    public static boolean isListening() {
+        if (!PeripheralServerConfig.listenEnabled() || !LISTEN.isDown()) {
+            return false;
+        }
+
+        if (!PeripheralServerConfig.requireCrouchToListen()) {
+            return true;
+        }
+
+        Minecraft minecraft = Minecraft.getInstance();
+        return minecraft.player != null && minecraft.player.isCrouching();
+    }
+
+    public static boolean shouldShowHolograms() {
+        return hologramsEnabled && (!PeripheralServerConfig.listenEnabled() || isListening());
     }
 
     public static void toggleHolograms() {

@@ -1,6 +1,7 @@
 {
   "key.categories.peripheral": "Peripheral",
   "key.peripheral.toggle_holograms": "Toggle Threat Holograms",
+  "key.peripheral.listen": "Listen (Hold to Show Holograms)",
   "message.peripheral.holograms_enabled": "Threat Holograms: ON",
   "message.peripheral.holograms_disabled": "Threat Holograms: OFF"
 }

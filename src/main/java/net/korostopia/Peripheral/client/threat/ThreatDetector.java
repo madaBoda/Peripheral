@@ -1,7 +1,7 @@
 package net.korostopia.Peripheral.client.threat;
 
 import net.korostopia.Peripheral.client.math.HudProjection;
-import net.korostopia.Peripheral.config.PeripheralConfig;
+import net.korostopia.Peripheral.config.PeripheralServerConfig;
 import net.korostopia.Peripheral.debug.PeripheralDebug;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -56,6 +56,7 @@ public final class ThreatDetector {
             int maxTargets,
             boolean includeFrontHemisphere,
             boolean showThroughWalls,
+            boolean listenModeActive,
             boolean guiScreenPass
     ) {
         if (level == null || minecraft.player == null || camera == null) {
@@ -86,8 +87,8 @@ public final class ThreatDetector {
                 cameraPosition.z + detectionRange
         );
 
-        Set<String> includedMobIds = normalizeEntityIds(PeripheralConfig.INCLUDE_MOBS.get());
-        Set<String> excludedMobIds = normalizeEntityIds(PeripheralConfig.EXCLUDE_MOBS.get());
+        Set<String> includedMobIds = normalizeEntityIds(PeripheralServerConfig.includedMobs());
+        Set<String> excludedMobIds = normalizeEntityIds(PeripheralServerConfig.excludedMobs());
 
         List<LivingEntity> entities = level.getEntitiesOfClass(
                 LivingEntity.class,
@@ -126,45 +127,52 @@ public final class ThreatDetector {
             boolean inFront = HudProjection.isInFront(
                     minecraft.player.getYRot(), cameraPosition, center
             );
-            if (inFront && !includeFrontHemisphere) {
-                logEntityDecision(
-                        typeId,
-                        "direction-filtered",
-                        "front-side detection is disabled by the config"
-                );
-                suppressedEntities.add(entity.getUUID());
-                continue;
-            }
-            boolean insideRadarRange = distanceSquared <= radarRangeSquared;
-            boolean clearLineOfSight = hasLineOfSight(level, minecraft, cameraPosition, entity, feet);
 
-            if (!clearLineOfSight) {
-                if (!showThroughWalls || !insideRadarRange) {
-                    logEntityDecision(typeId, "wall-occlusion-suppressed",
-                            !showThroughWalls
-                                    ? "mob is blocked by solid blocks and showThroughWalls is disabled"
-                                    : "mob is blocked by solid blocks and is outside radarRange");
+            // Listen Mode deliberately ignores the normal radar rules: eligible threats are
+            // shown in every direction, whether visible or occluded by blocks, up to detectionRange.
+            if (!listenModeActive) {
+                if (inFront && !includeFrontHemisphere) {
+                    logEntityDecision(
+                            typeId,
+                            "direction-filtered",
+                            "front-side detection is disabled by the server config"
+                    );
                     suppressedEntities.add(entity.getUUID());
                     continue;
                 }
-            } else if (!guiScreenPass && inFront) {
-                logEntityDecision(typeId, "visible-front-suppressed",
-                        "front-facing mob is clearly visible during normal gameplay");
-                suppressedEntities.add(entity.getUUID());
-                continue;
+
+                boolean insideRadarRange = distanceSquared <= radarRangeSquared;
+                boolean clearLineOfSight = hasLineOfSight(level, minecraft, cameraPosition, entity, feet);
+
+                if (!clearLineOfSight) {
+                    if (!showThroughWalls || !insideRadarRange) {
+                        logEntityDecision(typeId, "wall-occlusion-suppressed",
+                                !showThroughWalls
+                                        ? "mob is blocked by solid blocks and showThroughWalls is disabled"
+                                        : "mob is blocked by solid blocks and is outside radarRange");
+                        suppressedEntities.add(entity.getUUID());
+                        continue;
+                    }
+                } else if (!guiScreenPass && inFront) {
+                    logEntityDecision(typeId, "visible-front-suppressed",
+                            "front-facing mob is clearly visible during normal gameplay");
+                    suppressedEntities.add(entity.getUUID());
+                    continue;
+                }
             }
 
             logEntityDecision(
                     typeId,
                     "candidate",
-                    (inFront ? "front" : "rear") + " threat eligible; radarRange=" + effectiveRadarRange
-                            + ", detectionRange=" + detectionRange + ", guiPass=" + guiScreenPass
+                    (inFront ? "front" : "rear") + " threat eligible; listenMode=" + listenModeActive
+                            + ", radarRange=" + effectiveRadarRange + ", detectionRange=" + detectionRange
+                            + ", guiPass=" + guiScreenPass
             );
             selected.add(new ThreatTarget(entity, feet, center, distanceSquared, inFront));
         }
 
         selected.sort(Comparator.comparingDouble(ThreatTarget::distanceSquared));
-        if (selected.size() > maxTargets) {
+        if (!listenModeActive && selected.size() > maxTargets) {
             selected.subList(maxTargets, selected.size()).clear();
         }
         return new DetectionResult(List.copyOf(selected), Set.copyOf(suppressedEntities));

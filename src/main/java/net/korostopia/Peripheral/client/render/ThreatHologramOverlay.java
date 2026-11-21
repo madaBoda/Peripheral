@@ -6,7 +6,8 @@ import net.korostopia.Peripheral.client.math.HudProjection;
 import net.korostopia.Peripheral.client.threat.ThreatDetector;
 import net.korostopia.Peripheral.client.tracking.HologramTrack;
 import net.korostopia.Peripheral.client.tracking.HologramTracker;
-import net.korostopia.Peripheral.config.PeripheralConfig;
+import net.korostopia.Peripheral.config.PeripheralClientConfig;
+import net.korostopia.Peripheral.config.PeripheralServerConfig;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -36,17 +37,20 @@ public final class ThreatHologramOverlay {
             int screenHeight
     ) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (!PeripheralKeyMappings.areHologramsEnabled()) {
+        if (!PeripheralKeyMappings.shouldShowHolograms()) {
             clearAll(minecraft.level);
             return;
         }
         if (minecraft.screen != null) {
-            if (!PeripheralConfig.SHOW_IN_MENUS.get()) {
+            if (!PeripheralClientConfig.SHOW_IN_MENUS.get()) {
                 clearIfNeeded(minecraft.level);
             }
             return;
         }
-        renderContent(minecraft, guiGraphics, partialTick, screenWidth, screenHeight, false);
+        renderContent(
+                minecraft, guiGraphics, partialTick, screenWidth, screenHeight,
+                false, PeripheralKeyMappings.isListening()
+        );
     }
 
     public static void renderOnScreen(
@@ -57,19 +61,22 @@ public final class ThreatHologramOverlay {
             int screenHeight
     ) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (!PeripheralKeyMappings.areHologramsEnabled()) {
+        if (!PeripheralKeyMappings.shouldShowHolograms()) {
             clearAll(minecraft.level);
             return;
         }
-        if (!PeripheralConfig.SHOW_IN_MENUS.get() || screen == null || minecraft.screen == null
+        if (!PeripheralClientConfig.SHOW_IN_MENUS.get() || screen == null || minecraft.screen == null
                 || isScreenExcluded(screen)) {
             return;
         }
-        renderContent(minecraft, guiGraphics, partialTick, screenWidth, screenHeight, true);
+        renderContent(
+                minecraft, guiGraphics, partialTick, screenWidth, screenHeight,
+                true, PeripheralKeyMappings.isListening()
+        );
     }
 
     private static boolean isScreenExcluded(Screen screen) {
-        List<? extends String> exclusions = PeripheralConfig.SCREEN_EXCLUSIONS.get();
+        List<? extends String> exclusions = PeripheralClientConfig.SCREEN_EXCLUSIONS.get();
         if (exclusions.isEmpty()) {
             return false;
         }
@@ -100,7 +107,8 @@ public final class ThreatHologramOverlay {
             float partialTick,
             int screenWidth,
             int screenHeight,
-            boolean screenPass
+            boolean screenPass,
+            boolean listenModeActive
     ) {
         ClientLevel level = minecraft.level;
         if (level == null || minecraft.player == null || (!screenPass && minecraft.options.hideGui)) {
@@ -126,29 +134,30 @@ public final class ThreatHologramOverlay {
         previousFrameNanos = nowNanos;
 
         double verticalFovDegrees = CameraFovCache.get(camera, minecraft.options.fov().get());
-        int detectionRange = PeripheralConfig.DETECTION_RANGE.get();
+        int detectionRange = PeripheralServerConfig.detectionRange();
         ThreatDetector.DetectionResult detection = ThreatDetector.detect(
                 minecraft,
                 level,
                 camera,
                 partialTick,
                 detectionRange,
-                PeripheralConfig.RADAR_RANGE.get(),
-                PeripheralConfig.MAX_TARGETS.get(),
-                PeripheralConfig.ENABLE_FRONT_HEMISPHERE.get(),
-                PeripheralConfig.SHOW_THROUGH_WALLS.get(),
+                PeripheralServerConfig.radarRange(),
+                PeripheralServerConfig.maxTargets(),
+                PeripheralServerConfig.includeFrontHemisphere(),
+                PeripheralServerConfig.showThroughWalls(),
+                listenModeActive,
                 screenPass
         );
         TRACKER.update(
                 detection.threats(),
                 detection.suppressedEntities(),
                 deltaSeconds,
-                PeripheralConfig.SMOOTHING_SPEED.get(),
-                PeripheralConfig.OPACITY_INTERPOLATION_SPEED.get(),
-                PeripheralConfig.OPACITY.get(),
+                PeripheralClientConfig.SMOOTHING_SPEED.get(),
+                PeripheralClientConfig.OPACITY_INTERPOLATION_SPEED.get(),
+                PeripheralClientConfig.OPACITY.get(),
                 detectionRange,
-                PeripheralConfig.FADE_IN_DURATION_MS.get(),
-                PeripheralConfig.FADE_OUT_DURATION_MS.get(),
+                PeripheralClientConfig.FADE_IN_DURATION_MS.get(),
+                PeripheralClientConfig.FADE_OUT_DURATION_MS.get(),
                 nowNanos
         );
         TRACKER.removeOutsideRange(camera.getPosition(), detectionRange, nowNanos);
@@ -160,10 +169,10 @@ public final class ThreatHologramOverlay {
         Vec3 playerEyeReference = interpolatedPlayerEyePosition(minecraft.player, partialTick);
         double hudMovementSpeed = Math.max(
                 0.0D,
-                PeripheralConfig.HUD_MOVEMENT_SMOOTHING_SPEED.get()
+                PeripheralClientConfig.HUD_MOVEMENT_SMOOTHING_SPEED.get()
         );
         double hudMovementAlpha = 1.0D - Math.exp(-hudMovementSpeed * deltaSeconds);
-        double minSizeDistance = PeripheralConfig.MIN_SIZE_DISTANCE.get();
+        double minSizeDistance = PeripheralClientConfig.MIN_SIZE_DISTANCE.get();
         Vec3 cameraPosition = camera.getPosition();
         double verticalFovRadians = Math.toRadians(Mth.clamp(
                 (float) verticalFovDegrees, 30.0F, 150.0F
